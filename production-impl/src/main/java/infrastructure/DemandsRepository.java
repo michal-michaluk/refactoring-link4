@@ -1,7 +1,7 @@
 package infrastructure;
 
 import demands.DemandReadModel;
-import demands.DemandsQuery;
+import demands.DemandReadModelDao;
 import enums.DeliverySchema;
 import shortages.Demands;
 import shortages.LevelOnDeliveryStrategy;
@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 
 public class DemandsRepository {
 
-    private DemandsQuery demandSource;
+    private DemandReadModelDao demandSource;
     private final Map<DeliverySchema, LevelOnDeliveryStrategy> mapping = init();
 
     public Demands get(String productRefNo, LocalDateTime date) {
-        List<DemandReadModel> demands = demandSource.find(productRefNo, date);
+        List<DemandReadModel> demands = demandSource.findFrom(date, productRefNo);
 
         return new Demands(demands.stream().collect(Collectors.toMap(
                 DemandReadModel::getDay,

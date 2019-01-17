@@ -6,8 +6,7 @@ import api.StockForecastDto;
 import dao.DemandDao;
 import dao.ProductionDao;
 import dao.ShortageDao;
-import entities.DemandEntity;
-import entities.ManualAdjustmentEntity;
+import demands.Demandish;
 import entities.ShortageEntity;
 import external.CurrentStock;
 import external.JiraService;
@@ -58,15 +57,11 @@ public class LogisticServiceImpl implements LogisticService {
         if (adjustment.getAtDay().isBefore(LocalDate.now(clock))) {
             return; // TODO it is UI issue or reproduced post
         }
-        DemandEntity demand = demandDao.getCurrent(adjustment.getProductRefNo(), adjustment.getAtDay());
+        Demandish object = new DemandRepository().get(adjustment);
 
-        ManualAdjustmentEntity manualAdjustment = new ManualAdjustmentEntity();
-        manualAdjustment.setLevel(adjustment.getLevel());
-        manualAdjustment.setNote(adjustment.getNote());
-        manualAdjustment.setDeliverySchema(adjustment.getDeliverySchema());
+        object.adjustDemand(adjustment);
 
-        demand.getAdjustment().add(manualAdjustment);
-
+        // emit DemandChanged
         processShortages(adjustment.getProductRefNo());
     }
 
@@ -121,4 +116,5 @@ public class LogisticServiceImpl implements LogisticService {
             shortageDao.delete(productRefNo);
         }
     }
+
 }

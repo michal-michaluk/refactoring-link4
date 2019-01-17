@@ -1,4 +1,4 @@
-package tools;
+package demands;
 
 import entities.DemandEntity;
 import entities.FormEntity;
@@ -46,7 +46,7 @@ public class Util {
      *  There is no need to produce other products just in time so we can treat them as delivery at start of production day.
      * </pre>
      */
-    private static DeliverySchema defaultFor(String productRefNo) {
+    public static DeliverySchema defaultFor(String productRefNo) {
         if (productRefNo.equals("461952387712") || productRefNo.equals("461952816051")) {
             return DeliverySchema.every3hours;
         }
