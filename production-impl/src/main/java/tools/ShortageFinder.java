@@ -7,7 +7,7 @@ import enums.DeliverySchema;
 import external.CurrentStock;
 import shortages.Demand;
 import shortages.Demands;
-import shortages.Productions;
+import shortages.ProductionPlan;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.time.LocalDate;
@@ -37,7 +37,6 @@ public class ShortageFinder {
      * customer always specifies desired delivery schema
      * (increase amount in scheduled transport or organize extra transport at given time)
      *
-     * TODO algorithm is finding wrong shortages, when more productions is planned in a single day
      */
     public static List<ShortageEntity> findShortages(LocalDate today, int daysAhead, CurrentStock stock,
                                                      List<ProductionEntity> productions, List<DemandEntity> demands) {
@@ -45,7 +44,7 @@ public class ShortageFinder {
                 .limit(daysAhead)
                 .collect(toList());
 
-        Productions outputs = new Productions(productions);
+        ProductionPlan outputs = new ProductionPlan(productions);
         Demands demandsPerDay = new Demands(demands);
 
         long level = stock.getLevel();

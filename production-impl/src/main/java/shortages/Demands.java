@@ -16,7 +16,6 @@ public class Demands {
         for (DemandEntity demand1 : demands) {
             demandsPerDay.put(demand1.getDay(), demand1);
         }
-
     }
 
     public Demand get(LocalDate day) {
