@@ -20,7 +20,11 @@ public class Demands {
     }
 
     public Demand get(LocalDate day) {
-        DemandEntity entity = demandsPerDay.get(day);
-        return new Demand(entity);
+        if (demandsPerDay.containsKey(day)) {
+            DemandEntity entity = demandsPerDay.get(day);
+            return new Demand(entity);
+        } else {
+            return null;
+        }
     }
 }
