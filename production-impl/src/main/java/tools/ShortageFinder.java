@@ -5,12 +5,11 @@ import entities.ProductionEntity;
 import entities.ShortageEntity;
 import enums.DeliverySchema;
 import external.CurrentStock;
-import shortages.Demand;
-import shortages.Demands;
-import shortages.ProductionPlan;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -37,6 +36,7 @@ public class ShortageFinder {
      * customer always specifies desired delivery schema
      * (increase amount in scheduled transport or organize extra transport at given time)
      *
+     * TODO algorithm is finding wrong shortages, when more productions is planned in a single day
      */
     public static List<ShortageEntity> findShortages(LocalDate today, int daysAhead, CurrentStock stock,
                                                      List<ProductionEntity> productions, List<DemandEntity> demands) {
@@ -44,26 +44,41 @@ public class ShortageFinder {
                 .limit(daysAhead)
                 .collect(toList());
 
-        ProductionPlan outputs = new ProductionPlan(productions);
-        Demands demandsPerDay = new Demands(demands);
+        String productRefNo = null;
+        HashMap<LocalDate, List<ProductionEntity>> outputs = new HashMap<>();
+        for (ProductionEntity production : productions) {
+            outputs.computeIfAbsent(production.getStart().toLocalDate(), key -> new ArrayList<>());
+            productRefNo = production.getForm().getRefNo();
+        }
+        HashMap<LocalDate, DemandEntity> demandsPerDay = new HashMap<>();
+        for (DemandEntity demand1 : demands) {
+            demandsPerDay.put(demand1.getDay(), demand1);
+        }
 
         long level = stock.getLevel();
 
         List<ShortageEntity> gap = new LinkedList<>();
         for (LocalDate day : dates) {
-            Demand demand = demandsPerDay.get(day);
+            DemandEntity demand = demandsPerDay.get(day);
             if (demand == null) {
-                level += outputs.getOutput(day);
+                List<ProductionEntity> production = outputs.get(day);
+                for (ProductionEntity entity : production) {
+                    level += entity.getOutput();
+                }
                 continue;
             }
-            long produced = outputs.getOutput(day);
+            long produced = 0;
+            List<ProductionEntity> production = outputs.get(day);
+            for (ProductionEntity entity : production) {
+                produced += entity.getOutput();
+            }
 
             long levelOnDelivery;
-            if (demand.hasDeliverySchema(DeliverySchema.atDayStart)) {
-                levelOnDelivery = level - demand.getLevel();
-            } else if (demand.hasDeliverySchema(DeliverySchema.tillEndOfDay)) {
-                levelOnDelivery = level - demand.getLevel() + produced;
-            } else if (demand.hasDeliverySchema(DeliverySchema.every3hours)) {
+            if (Util.getDeliverySchema(demand) == DeliverySchema.atDayStart) {
+                levelOnDelivery = level - Util.getLevel(demand);
+            } else if (Util.getDeliverySchema(demand) == DeliverySchema.tillEndOfDay) {
+                levelOnDelivery = level - Util.getLevel(demand) + produced;
+            } else if (Util.getDeliverySchema(demand) == DeliverySchema.every3hours) {
                 // TODO WTF ?? we need to rewrite that app :/
                 throw new NotImplementedException();
             } else {
@@ -73,13 +88,13 @@ public class ShortageFinder {
 
             if (!(levelOnDelivery >= 0)) {
                 ShortageEntity entity = new ShortageEntity();
-                entity.setRefNo(outputs.getProductRefNo());
+                entity.setRefNo(productRefNo);
                 entity.setFound(LocalDate.now());
                 entity.setMissing(levelOnDelivery * -1L);
                 entity.setAtDay(day);
                 gap.add(entity);
             }
-            long endOfDayLevel = level + produced - demand.getLevel();
+            long endOfDayLevel = level + produced - Util.getLevel(demand);
             level = endOfDayLevel >= 0 ? endOfDayLevel : 0;
         }
         return gap;
