@@ -1,4 +1,4 @@
-package shortages;
+package infrastructure;
 
 import entities.DemandEntity;
 import entities.ProductionEntity;
